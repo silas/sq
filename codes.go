@@ -1,6 +1,5 @@
 package sq
 
-
 const (
 	// Class 00 - Successful Completion
 	CodeSuccessfulCompletion = "00000"

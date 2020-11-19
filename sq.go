@@ -9,6 +9,14 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
+var (
+	ErrNoRows = pgx.ErrNoRows
+	ErrTxClosed = pgx.ErrTxClosed
+	ErrTxCommitRollback = pgx.ErrTxCommitRollback
+)
+
+type Config = pgxpool.Config
+
 type Pool interface {
 	Tx(ctx context.Context, fn func(tx Tx) error) error
 }
@@ -17,8 +25,26 @@ type pgxPool struct {
 	pool *pgxpool.Pool
 }
 
-func New(pool *pgxpool.Pool) Pool {
-	return &pgxPool{pool: pool}
+func Connect(ctx context.Context, connString string) (Pool, error) {
+	pool, err := pgxpool.Connect(ctx, connString)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pgxPool{pool: pool}, nil
+}
+
+func ParseConfig(connString string) (*Config, error) {
+	return pgxpool.ParseConfig(connString)
+}
+
+func ConnectConfig(ctx context.Context, config *Config) (Pool, error) {
+	pool, err := pgxpool.ConnectConfig(ctx, config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pgxPool{pool: pool}, nil
 }
 
 func (p *pgxPool) Tx(ctx context.Context, fn func(tx Tx) error) error {
@@ -32,11 +58,7 @@ func (p *pgxPool) Tx(ctx context.Context, fn func(tx Tx) error) error {
 	return txExecute(ctx, tx, fn)
 }
 
-type Result pgconn.CommandTag
-
-func (r Result) RowsAffected() int64 {
-	return pgconn.CommandTag(r).RowsAffected()
-}
+type Result = pgconn.CommandTag
 
 type Tx interface {
 	Exec(ctx context.Context, qb QueryBuilder) (Result, error)
@@ -54,8 +76,7 @@ func (tx *Transaction) Exec(ctx context.Context, qb QueryBuilder) (Result, error
 		return nil, err
 	}
 
-	r, err := tx.tx.Exec(ctx, sql, args...)
-	return Result(r), err
+	return tx.tx.Exec(ctx, sql, args...)
 }
 
 func (tx *Transaction) Query(ctx context.Context, qb QueryBuilder) (Rows, error) {
