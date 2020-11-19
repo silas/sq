@@ -26,40 +26,47 @@ func (p wherePart) ToSQL() (sql string, args []interface{}, err error) {
 }
 
 // WhereBuilder builds SQL where statements.
-type WhereBuilder struct {
+type WhereBuilder interface {
+	Where(pred interface{}, args ...interface{}) WhereBuilder
+	Select(columns ...string) SelectBuilder
+	Update(table string) UpdateBuilder
+	Delete(what ...string) DeleteBuilder
+}
+
+type whereBuilder struct {
 	whereParts []QueryBuilder
 }
 
 // NewWhereBuilder creates new instance of UpdateBuilder
-func NewWhereBuilder() *WhereBuilder {
-	return &WhereBuilder{}
+func NewWhereBuilder() WhereBuilder {
+	return &whereBuilder{}
 }
 
 // Where adds WHERE expressions to the query.
 //
 // See SelectBuilder.Where for more information.
-func (b *WhereBuilder) Where(pred interface{}, args ...interface{}) *WhereBuilder {
+func (b *whereBuilder) Where(pred interface{}, args ...interface{}) WhereBuilder {
 	b.whereParts = append(b.whereParts, newWherePart(pred, args...))
 	return b
 }
 
 // Select returns a SelectBuilder for this WhereBuilder.
-func (b *WhereBuilder) Select(columns ...string) *SelectBuilder {
+func (b *whereBuilder) Select(columns ...string) SelectBuilder {
 	nb := NewSelectBuilder().Columns(columns...)
-	nb.whereParts = b.whereParts
+	nb.(*selectBuilder).whereParts = b.whereParts
 	return nb
 }
 
 // Update returns a UpdateBuilder for this WhereBuilder.
-func (b *WhereBuilder) Update(table string) *UpdateBuilder {
+func (b *whereBuilder) Update(table string) UpdateBuilder {
 	nb := NewUpdateBuilder().Table(table)
-	nb.whereParts = b.whereParts
+	nb.(*updateBuilder).whereParts = b.whereParts
 	return nb
 }
 
 // Delete returns a DeleteBuilder for this WhereBuilder.
-func (b *WhereBuilder) Delete(what ...string) *DeleteBuilder {
+func (b *whereBuilder) Delete(what ...string) DeleteBuilder {
 	nb := NewDeleteBuilder().What(what...)
-	nb.whereParts = b.whereParts
+	nb.(*deleteBuilder).whereParts = b.whereParts
 	return nb
 }

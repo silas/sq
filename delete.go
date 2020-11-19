@@ -7,10 +7,24 @@ import (
 	"strings"
 )
 
-// Builder
-
 // DeleteBuilder builds SQL DELETE statements.
-type DeleteBuilder struct {
+type DeleteBuilder interface {
+	Prefix(sql string, args ...interface{}) DeleteBuilder
+	From(from string) DeleteBuilder
+	What(what ...string) DeleteBuilder
+	Where(pred interface{}, args ...interface{}) DeleteBuilder
+	OrderBy(orderBys ...string) DeleteBuilder
+	Limit(limit uint64) DeleteBuilder
+	Offset(offset uint64) DeleteBuilder
+	Suffix(sql string, args ...interface{}) DeleteBuilder
+	JoinClause(join string) DeleteBuilder
+	Join(join string) DeleteBuilder
+	LeftJoin(join string) DeleteBuilder
+	RightJoin(join string) DeleteBuilder
+	ToSQL() (sqlStr string, args []interface{}, err error)
+}
+
+type deleteBuilder struct {
 	prefixes   exprs
 	what       []string
 	from       string
@@ -27,12 +41,12 @@ type DeleteBuilder struct {
 }
 
 // NewDeleteBuilder creates new instance of DeleteBuilder
-func NewDeleteBuilder() *DeleteBuilder {
-	return &DeleteBuilder{}
+func NewDeleteBuilder() DeleteBuilder {
+	return &deleteBuilder{}
 }
 
 // ToSQL builds the query into a SQL string and bound args.
-func (b *DeleteBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
+func (b *deleteBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 	if len(b.from) == 0 {
 		err = fmt.Errorf("delete statements must specify a From table")
 		return
@@ -95,19 +109,19 @@ func (b *DeleteBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 }
 
 // Prefix adds an expression to the beginning of the query
-func (b *DeleteBuilder) Prefix(sql string, args ...interface{}) *DeleteBuilder {
+func (b *deleteBuilder) Prefix(sql string, args ...interface{}) DeleteBuilder {
 	b.prefixes = append(b.prefixes, Expr(sql, args...))
 	return b
 }
 
 // From sets the FROM clause of the query.
-func (b *DeleteBuilder) From(from string) *DeleteBuilder {
+func (b *deleteBuilder) From(from string) DeleteBuilder {
 	b.from = from
 	return b
 }
 
 // What sets names of tables to be used for deleting from
-func (b *DeleteBuilder) What(what ...string) *DeleteBuilder {
+func (b *deleteBuilder) What(what ...string) DeleteBuilder {
 	filteredWhat := make([]string, 0, len(what))
 	for _, item := range what {
 		if len(item) > 0 {
@@ -124,26 +138,26 @@ func (b *DeleteBuilder) What(what ...string) *DeleteBuilder {
 }
 
 // Where adds WHERE expressions to the query.
-func (b *DeleteBuilder) Where(pred interface{}, args ...interface{}) *DeleteBuilder {
+func (b *deleteBuilder) Where(pred interface{}, args ...interface{}) DeleteBuilder {
 	b.whereParts = append(b.whereParts, newWherePart(pred, args...))
 	return b
 }
 
 // OrderBy adds ORDER BY expressions to the query.
-func (b *DeleteBuilder) OrderBy(orderBys ...string) *DeleteBuilder {
+func (b *deleteBuilder) OrderBy(orderBys ...string) DeleteBuilder {
 	b.orderBys = append(b.orderBys, orderBys...)
 	return b
 }
 
 // Limit sets a LIMIT clause on the query.
-func (b *DeleteBuilder) Limit(limit uint64) *DeleteBuilder {
+func (b *deleteBuilder) Limit(limit uint64) DeleteBuilder {
 	b.limit = limit
 	b.limitValid = true
 	return b
 }
 
 // Offset sets a OFFSET clause on the query.
-func (b *DeleteBuilder) Offset(offset uint64) *DeleteBuilder {
+func (b *deleteBuilder) Offset(offset uint64) DeleteBuilder {
 	b.offset = offset
 	b.offsetValid = true
 
@@ -151,30 +165,30 @@ func (b *DeleteBuilder) Offset(offset uint64) *DeleteBuilder {
 }
 
 // Suffix adds an expression to the end of the query
-func (b *DeleteBuilder) Suffix(sql string, args ...interface{}) *DeleteBuilder {
+func (b *deleteBuilder) Suffix(sql string, args ...interface{}) DeleteBuilder {
 	b.suffixes = append(b.suffixes, Expr(sql, args...))
 
 	return b
 }
 
 // JoinClause adds a join clause to the query.
-func (b *DeleteBuilder) JoinClause(join string) *DeleteBuilder {
+func (b *deleteBuilder) JoinClause(join string) DeleteBuilder {
 	b.joins = append(b.joins, join)
 
 	return b
 }
 
 // Join adds a JOIN clause to the query.
-func (b *DeleteBuilder) Join(join string) *DeleteBuilder {
+func (b *deleteBuilder) Join(join string) DeleteBuilder {
 	return b.JoinClause("JOIN " + join)
 }
 
 // LeftJoin adds a LEFT JOIN clause to the query.
-func (b *DeleteBuilder) LeftJoin(join string) *DeleteBuilder {
+func (b *deleteBuilder) LeftJoin(join string) DeleteBuilder {
 	return b.JoinClause("LEFT JOIN " + join)
 }
 
 // RightJoin adds a RIGHT JOIN clause to the query.
-func (b *DeleteBuilder) RightJoin(join string) *DeleteBuilder {
+func (b *deleteBuilder) RightJoin(join string) DeleteBuilder {
 	return b.JoinClause("RIGHT JOIN " + join)
 }
