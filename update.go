@@ -13,10 +13,21 @@ type setClause struct {
 	value  interface{}
 }
 
-// Builder
-
 // UpdateBuilder builds SQL UPDATE statements.
-type UpdateBuilder struct {
+type UpdateBuilder interface {
+	Prefix(sql string, args ...interface{}) UpdateBuilder
+	Table(table string) UpdateBuilder
+	Set(column string, value interface{}) UpdateBuilder
+	SetMap(clauses map[string]interface{}) UpdateBuilder
+	Where(pred interface{}, args ...interface{}) UpdateBuilder
+	OrderBy(orderBys ...string) UpdateBuilder
+	Limit(limit uint64) UpdateBuilder
+	Offset(offset uint64) UpdateBuilder
+	Suffix(sql string, args ...interface{}) UpdateBuilder
+	ToSQL() (sqlStr string, args []interface{}, err error)
+}
+
+type updateBuilder struct {
 	prefixes   exprs
 	table      string
 	setClauses []setClause
@@ -32,12 +43,12 @@ type UpdateBuilder struct {
 }
 
 // NewUpdateBuilder creates new instance of UpdateBuilder
-func NewUpdateBuilder() *UpdateBuilder {
-	return &UpdateBuilder{}
+func NewUpdateBuilder() UpdateBuilder {
+	return &updateBuilder{}
 }
 
 // ToSQL builds the query into a SQL string and bound args.
-func (b *UpdateBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
+func (b *updateBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 	if len(b.table) == 0 {
 		err = fmt.Errorf("update statements must specify a table")
 		return
@@ -113,25 +124,25 @@ func (b *UpdateBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 // SQL methods
 
 // Prefix adds an expression to the beginning of the query
-func (b *UpdateBuilder) Prefix(sql string, args ...interface{}) *UpdateBuilder {
+func (b *updateBuilder) Prefix(sql string, args ...interface{}) UpdateBuilder {
 	b.prefixes = append(b.prefixes, Expr(sql, args...))
 	return b
 }
 
 // Table sets the table to be updateb.
-func (b *UpdateBuilder) Table(table string) *UpdateBuilder {
+func (b *updateBuilder) Table(table string) UpdateBuilder {
 	b.table = table
 	return b
 }
 
 // Set adds SET clauses to the query.
-func (b *UpdateBuilder) Set(column string, value interface{}) *UpdateBuilder {
+func (b *updateBuilder) Set(column string, value interface{}) UpdateBuilder {
 	b.setClauses = append(b.setClauses, setClause{column: column, value: value})
 	return b
 }
 
 // SetMap is a convenience method which calls .Set for each key/value pair in clauses.
-func (b *UpdateBuilder) SetMap(clauses map[string]interface{}) *UpdateBuilder {
+func (b *updateBuilder) SetMap(clauses map[string]interface{}) UpdateBuilder {
 	keys := make([]string, len(clauses))
 	i := 0
 	for key := range clauses {
@@ -141,7 +152,7 @@ func (b *UpdateBuilder) SetMap(clauses map[string]interface{}) *UpdateBuilder {
 	sort.Strings(keys)
 	for _, key := range keys {
 		val := clauses[key]
-		b = b.Set(key, val)
+		b.Set(key, val)
 	}
 	return b
 }
@@ -149,33 +160,33 @@ func (b *UpdateBuilder) SetMap(clauses map[string]interface{}) *UpdateBuilder {
 // Where adds WHERE expressions to the query.
 //
 // See SelectBuilder.Where for more information.
-func (b *UpdateBuilder) Where(pred interface{}, args ...interface{}) *UpdateBuilder {
+func (b *updateBuilder) Where(pred interface{}, args ...interface{}) UpdateBuilder {
 	b.whereParts = append(b.whereParts, newWherePart(pred, args...))
 	return b
 }
 
 // OrderBy adds ORDER BY expressions to the query.
-func (b *UpdateBuilder) OrderBy(orderBys ...string) *UpdateBuilder {
+func (b *updateBuilder) OrderBy(orderBys ...string) UpdateBuilder {
 	b.orderBys = append(b.orderBys, orderBys...)
 	return b
 }
 
 // Limit sets a LIMIT clause on the query.
-func (b *UpdateBuilder) Limit(limit uint64) *UpdateBuilder {
+func (b *updateBuilder) Limit(limit uint64) UpdateBuilder {
 	b.limit = limit
 	b.limitValid = true
 	return b
 }
 
 // Offset sets a OFFSET clause on the query.
-func (b *UpdateBuilder) Offset(offset uint64) *UpdateBuilder {
+func (b *updateBuilder) Offset(offset uint64) UpdateBuilder {
 	b.offset = offset
 	b.offsetValid = true
 	return b
 }
 
 // Suffix adds an expression to the end of the query
-func (b *UpdateBuilder) Suffix(sql string, args ...interface{}) *UpdateBuilder {
+func (b *updateBuilder) Suffix(sql string, args ...interface{}) UpdateBuilder {
 	b.suffixes = append(b.suffixes, Expr(sql, args...))
 
 	return b

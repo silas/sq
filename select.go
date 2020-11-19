@@ -8,7 +8,27 @@ import (
 )
 
 // SelectBuilder builds SQL SELECT statements.
-type SelectBuilder struct {
+type SelectBuilder interface {
+	Prefix(sql string, args ...interface{}) SelectBuilder
+	Distinct() SelectBuilder
+	Columns(columns ...string) SelectBuilder
+	Column(column interface{}, args ...interface{}) SelectBuilder
+	From(from string) SelectBuilder
+	JoinClause(join string) SelectBuilder
+	Join(join string) SelectBuilder
+	LeftJoin(join string) SelectBuilder
+	RightJoin(join string) SelectBuilder
+	Where(pred interface{}, args ...interface{}) SelectBuilder
+	GroupBy(groupBys ...string) SelectBuilder
+	Having(pred interface{}, rest ...interface{}) SelectBuilder
+	OrderBy(orderBys ...string) SelectBuilder
+	Limit(limit uint64) SelectBuilder
+	Offset(offset uint64) SelectBuilder
+	Suffix(sql string, args ...interface{}) SelectBuilder
+	ToSQL() (sqlStr string, args []interface{}, err error)
+}
+
+type selectBuilder struct {
 	prefixes    exprs
 	distinct    bool
 	columns     []QueryBuilder
@@ -28,12 +48,12 @@ type SelectBuilder struct {
 }
 
 // NewSelectBuilder creates new instance of SelectBuilder
-func NewSelectBuilder() *SelectBuilder {
-	return &SelectBuilder{}
+func NewSelectBuilder() SelectBuilder {
+	return &selectBuilder{}
 }
 
 // ToSQL builds the query into a SQL string and bound args.
-func (b *SelectBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
+func (b *selectBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 	if len(b.columns) == 0 {
 		err = fmt.Errorf("select statements must have at least one result column")
 		return
@@ -117,20 +137,20 @@ func (b *SelectBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 }
 
 // Prefix adds an expression to the beginning of the query
-func (b *SelectBuilder) Prefix(sql string, args ...interface{}) *SelectBuilder {
+func (b *selectBuilder) Prefix(sql string, args ...interface{}) SelectBuilder {
 	b.prefixes = append(b.prefixes, Expr(sql, args...))
 	return b
 }
 
 // Distinct adds a DISTINCT clause to the query.
-func (b *SelectBuilder) Distinct() *SelectBuilder {
+func (b *selectBuilder) Distinct() SelectBuilder {
 	b.distinct = true
 
 	return b
 }
 
 // Columns adds result columns to the query.
-func (b *SelectBuilder) Columns(columns ...string) *SelectBuilder {
+func (b *selectBuilder) Columns(columns ...string) SelectBuilder {
 	for _, str := range columns {
 		b.columns = append(b.columns, newPart(str))
 	}
@@ -142,37 +162,37 @@ func (b *SelectBuilder) Columns(columns ...string) *SelectBuilder {
 // Unlike Columns, Column accepts args which will be bound to placeholders in
 // the columns string, for example:
 //   Column("IF(col IN ("+Placeholders(3)+"), 1, 0) as col", 1, 2, 3)
-func (b *SelectBuilder) Column(column interface{}, args ...interface{}) *SelectBuilder {
+func (b *selectBuilder) Column(column interface{}, args ...interface{}) SelectBuilder {
 	b.columns = append(b.columns, newPart(column, args...))
 
 	return b
 }
 
 // From sets the FROM clause of the query.
-func (b *SelectBuilder) From(from string) *SelectBuilder {
+func (b *selectBuilder) From(from string) SelectBuilder {
 	b.from = from
 	return b
 }
 
 // JoinClause adds a join clause to the query.
-func (b *SelectBuilder) JoinClause(join string) *SelectBuilder {
+func (b *selectBuilder) JoinClause(join string) SelectBuilder {
 	b.joins = append(b.joins, join)
 
 	return b
 }
 
 // Join adds a JOIN clause to the query.
-func (b *SelectBuilder) Join(join string) *SelectBuilder {
+func (b *selectBuilder) Join(join string) SelectBuilder {
 	return b.JoinClause("JOIN " + join)
 }
 
 // LeftJoin adds a LEFT JOIN clause to the query.
-func (b *SelectBuilder) LeftJoin(join string) *SelectBuilder {
+func (b *selectBuilder) LeftJoin(join string) SelectBuilder {
 	return b.JoinClause("LEFT JOIN " + join)
 }
 
 // RightJoin adds a RIGHT JOIN clause to the query.
-func (b *SelectBuilder) RightJoin(join string) *SelectBuilder {
+func (b *selectBuilder) RightJoin(join string) SelectBuilder {
 	return b.JoinClause("RIGHT JOIN " + join)
 }
 
@@ -196,13 +216,13 @@ func (b *SelectBuilder) RightJoin(join string) *SelectBuilder {
 // are ANDed together.
 //
 // Where will panic if pred isn't any of the above types.
-func (b *SelectBuilder) Where(pred interface{}, args ...interface{}) *SelectBuilder {
+func (b *selectBuilder) Where(pred interface{}, args ...interface{}) SelectBuilder {
 	b.whereParts = append(b.whereParts, newWherePart(pred, args...))
 	return b
 }
 
 // GroupBy adds GROUP BY expressions to the query.
-func (b *SelectBuilder) GroupBy(groupBys ...string) *SelectBuilder {
+func (b *selectBuilder) GroupBy(groupBys ...string) SelectBuilder {
 	b.groupBys = append(b.groupBys, groupBys...)
 	return b
 }
@@ -210,33 +230,33 @@ func (b *SelectBuilder) GroupBy(groupBys ...string) *SelectBuilder {
 // Having adds an expression to the HAVING clause of the query.
 //
 // See Where.
-func (b *SelectBuilder) Having(pred interface{}, rest ...interface{}) *SelectBuilder {
+func (b *selectBuilder) Having(pred interface{}, rest ...interface{}) SelectBuilder {
 	b.havingParts = append(b.havingParts, newWherePart(pred, rest...))
 	return b
 }
 
 // OrderBy adds ORDER BY expressions to the query.
-func (b *SelectBuilder) OrderBy(orderBys ...string) *SelectBuilder {
+func (b *selectBuilder) OrderBy(orderBys ...string) SelectBuilder {
 	b.orderBys = append(b.orderBys, orderBys...)
 	return b
 }
 
 // Limit sets a LIMIT clause on the query.
-func (b *SelectBuilder) Limit(limit uint64) *SelectBuilder {
+func (b *selectBuilder) Limit(limit uint64) SelectBuilder {
 	b.limit = limit
 	b.limitValid = true
 	return b
 }
 
 // Offset sets a OFFSET clause on the query.
-func (b *SelectBuilder) Offset(offset uint64) *SelectBuilder {
+func (b *selectBuilder) Offset(offset uint64) SelectBuilder {
 	b.offset = offset
 	b.offsetValid = true
 	return b
 }
 
 // Suffix adds an expression to the end of the query
-func (b *SelectBuilder) Suffix(sql string, args ...interface{}) *SelectBuilder {
+func (b *selectBuilder) Suffix(sql string, args ...interface{}) SelectBuilder {
 	b.suffixes = append(b.suffixes, Expr(sql, args...))
 
 	return b
