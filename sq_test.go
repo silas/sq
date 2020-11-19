@@ -27,6 +27,7 @@ func TestPool(t *testing.T) {
 
 	pool, err := Connect(ctx, databaseURL())
 	require.NoError(t, err)
+	t.Cleanup(pool.Close)
 
 	err = pool.Tx(ctx, func(tx Tx) error {
 		table := fmt.Sprintf("test_%d", time.Now().Unix())

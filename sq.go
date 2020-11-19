@@ -19,10 +19,7 @@ type Config = pgxpool.Config
 
 type Pool interface {
 	Tx(ctx context.Context, fn func(tx Tx) error) error
-}
-
-type pgxPool struct {
-	pool *pgxpool.Pool
+	Close()
 }
 
 func Connect(ctx context.Context, connString string) (Pool, error) {
@@ -47,6 +44,10 @@ func ConnectConfig(ctx context.Context, config *Config) (Pool, error) {
 	return &pgxPool{pool: pool}, nil
 }
 
+type pgxPool struct {
+	pool *pgxpool.Pool
+}
+
 func (p *pgxPool) Tx(ctx context.Context, fn func(tx Tx) error) error {
 	pgxtx, err := p.pool.BeginTx(ctx, pgx.TxOptions{
 		IsoLevel: pgx.Serializable,
@@ -56,6 +57,10 @@ func (p *pgxPool) Tx(ctx context.Context, fn func(tx Tx) error) error {
 	}
 	tx := &Transaction{tx: pgxtx}
 	return txExecute(ctx, tx, fn)
+}
+
+func (p *pgxPool) Close() {
+	p.pool.Close()
 }
 
 type Result = pgconn.CommandTag
