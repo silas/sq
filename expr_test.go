@@ -56,7 +56,7 @@ func TestEqNotInToSQL(t *testing.T) {
 }
 
 func TestExprNilToSQL(t *testing.T) {
-	var b QueryBuilder
+	var b StatementBuilder
 	b = NotEq{"name": nil}
 	sql, args, err := b.ToSQL()
 	assert.NoError(t, err)
@@ -132,7 +132,7 @@ func TestGtOrEqToSQL(t *testing.T) {
 }
 
 func TestNullTypeString(t *testing.T) {
-	var b QueryBuilder
+	var b StatementBuilder
 	var name sql.NullString
 
 	b = Eq{"name": name}

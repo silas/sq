@@ -8,12 +8,26 @@ import (
 
 // InsertBuilder builds SQL INSERT statements.
 type InsertBuilder interface {
+	// Prefix adds an expression to the beginning of the query.
 	Prefix(sql string, args ...interface{}) InsertBuilder
+
+	// Options adds keyword options before the INTO clause of the query.
 	Options(options ...string) InsertBuilder
+
+	// Into sets the INTO clause of the query.
 	Into(into string) InsertBuilder
+
+	// Columns adds insert columns to the query.
 	Columns(columns ...string) InsertBuilder
+
+	// Values adds a single row's values to the query.
 	Values(values ...interface{}) InsertBuilder
+
+	// Suffix adds an expression to the end of the query.
 	Suffix(sql string, args ...interface{}) InsertBuilder
+
+	// SetMap set columns and values for insert builder from a map of column name and value
+	// note that it will reset all previous columns and values was set if any.
 	SetMap(clauses map[string]interface{}) InsertBuilder
 
 	ToSQL() (sqlStr string, args []interface{}, err error)
@@ -33,7 +47,6 @@ func NewInsertBuilder() InsertBuilder {
 	return &insertBuilder{}
 }
 
-// ToSQL builds the query into a SQL string and bound args.
 func (b *insertBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 	if len(b.into) == 0 {
 		err = fmt.Errorf("insert statements must specify a table")
@@ -77,7 +90,7 @@ func (b *insertBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 
 		for v, val := range row {
 			switch typedVal := val.(type) {
-			case QueryBuilder:
+			case StatementBuilder:
 				var valSQL string
 				var valArgs []interface{}
 
@@ -103,48 +116,40 @@ func (b *insertBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 		args, _ = b.suffixes.AppendToSQL(sql, " ", args)
 	}
 
-	sqlStr, err = ReplacePlaceholders(sql.String())
+	sqlStr, err = replacePlaceholders(sql.String())
 	return
 }
 
-// Prefix adds an expression to the beginning of the query
 func (b *insertBuilder) Prefix(sql string, args ...interface{}) InsertBuilder {
-	b.prefixes = append(b.prefixes, Expr(sql, args...))
+	b.prefixes = append(b.prefixes, expr{sql, args})
 	return b
 }
 
-// Options adds keyword options before the INTO clause of the query.
 func (b *insertBuilder) Options(options ...string) InsertBuilder {
 	b.options = append(b.options, options...)
 	return b
 }
 
-// Into sets the INTO clause of the query.
 func (b *insertBuilder) Into(into string) InsertBuilder {
 	b.into = into
 	return b
 }
 
-// Columns adds insert columns to the query.
 func (b *insertBuilder) Columns(columns ...string) InsertBuilder {
 	b.columns = append(b.columns, columns...)
 	return b
 }
 
-// data adds a single row's values to the query.
 func (b *insertBuilder) Values(values ...interface{}) InsertBuilder {
 	b.values = append(b.values, values)
 	return b
 }
 
-// Suffix adds an expression to the end of the query
 func (b *insertBuilder) Suffix(sql string, args ...interface{}) InsertBuilder {
-	b.suffixes = append(b.suffixes, Expr(sql, args...))
+	b.suffixes = append(b.suffixes, expr{sql, args})
 	return b
 }
 
-// SetMap set columns and values for insert builder from a map of column name and value
-// note that it will reset all previous columns and values was set if any
 func (b *insertBuilder) SetMap(clauses map[string]interface{}) InsertBuilder {
 	// TODO: replace resetting previous values with extending existing ones?
 	cols := make([]string, 0, len(clauses))

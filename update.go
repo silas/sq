@@ -15,15 +15,35 @@ type setClause struct {
 
 // UpdateBuilder builds SQL UPDATE statements.
 type UpdateBuilder interface {
+	// Prefix adds an expression to the beginning of the query.
 	Prefix(sql string, args ...interface{}) UpdateBuilder
+
+	// Table sets the table to be updated.
 	Table(table string) UpdateBuilder
+
+	// Set adds SET clauses to the query.
 	Set(column string, value interface{}) UpdateBuilder
+
+	// SetMap is a convenience method which calls .Set for each key/value pair in clauses.
 	SetMap(clauses map[string]interface{}) UpdateBuilder
+
+	// Where adds WHERE expressions to the query.
+	//
+	// See SelectBuilder.Where for more information.
 	Where(pred interface{}, args ...interface{}) UpdateBuilder
+
+	// OrderBy adds ORDER BY expressions to the query.
 	OrderBy(orderBys ...string) UpdateBuilder
+
+	// Limit sets a LIMIT clause on the query.
 	Limit(limit uint64) UpdateBuilder
+
+	// Offset sets a OFFSET clause on the query.
 	Offset(offset uint64) UpdateBuilder
+
+	// Suffix adds an expression to the end of the query.
 	Suffix(sql string, args ...interface{}) UpdateBuilder
+
 	ToSQL() (sqlStr string, args []interface{}, err error)
 }
 
@@ -31,7 +51,7 @@ type updateBuilder struct {
 	prefixes   exprs
 	table      string
 	setClauses []setClause
-	whereParts []QueryBuilder
+	whereParts []StatementBuilder
 	orderBys   []string
 
 	limit       uint64
@@ -42,12 +62,11 @@ type updateBuilder struct {
 	suffixes exprs
 }
 
-// NewUpdateBuilder creates new instance of UpdateBuilder
+// NewUpdateBuilder creates new instance of UpdateBuilder.
 func NewUpdateBuilder() UpdateBuilder {
 	return &updateBuilder{}
 }
 
-// ToSQL builds the query into a SQL string and bound args.
 func (b *updateBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 	if len(b.table) == 0 {
 		err = fmt.Errorf("update statements must specify a table")
@@ -73,7 +92,7 @@ func (b *updateBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 	for i, setClause := range b.setClauses {
 		var valSQL string
 		switch typedVal := setClause.value.(type) {
-		case QueryBuilder:
+		case StatementBuilder:
 			var valArgs []interface{}
 			valSQL, valArgs, err = typedVal.ToSQL()
 			if err != nil {
@@ -117,31 +136,25 @@ func (b *updateBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 		args, _ = b.suffixes.AppendToSQL(sql, " ", args)
 	}
 
-	sqlStr, err = ReplacePlaceholders(sql.String())
+	sqlStr, err = replacePlaceholders(sql.String())
 	return
 }
 
-// SQL methods
-
-// Prefix adds an expression to the beginning of the query
 func (b *updateBuilder) Prefix(sql string, args ...interface{}) UpdateBuilder {
-	b.prefixes = append(b.prefixes, Expr(sql, args...))
+	b.prefixes = append(b.prefixes, expr{sql, args})
 	return b
 }
 
-// Table sets the table to be updateb.
 func (b *updateBuilder) Table(table string) UpdateBuilder {
 	b.table = table
 	return b
 }
 
-// Set adds SET clauses to the query.
 func (b *updateBuilder) Set(column string, value interface{}) UpdateBuilder {
 	b.setClauses = append(b.setClauses, setClause{column: column, value: value})
 	return b
 }
 
-// SetMap is a convenience method which calls .Set for each key/value pair in clauses.
 func (b *updateBuilder) SetMap(clauses map[string]interface{}) UpdateBuilder {
 	keys := make([]string, len(clauses))
 	i := 0
@@ -157,37 +170,30 @@ func (b *updateBuilder) SetMap(clauses map[string]interface{}) UpdateBuilder {
 	return b
 }
 
-// Where adds WHERE expressions to the query.
-//
-// See SelectBuilder.Where for more information.
 func (b *updateBuilder) Where(pred interface{}, args ...interface{}) UpdateBuilder {
 	b.whereParts = append(b.whereParts, newWherePart(pred, args...))
 	return b
 }
 
-// OrderBy adds ORDER BY expressions to the query.
 func (b *updateBuilder) OrderBy(orderBys ...string) UpdateBuilder {
 	b.orderBys = append(b.orderBys, orderBys...)
 	return b
 }
 
-// Limit sets a LIMIT clause on the query.
 func (b *updateBuilder) Limit(limit uint64) UpdateBuilder {
 	b.limit = limit
 	b.limitValid = true
 	return b
 }
 
-// Offset sets a OFFSET clause on the query.
 func (b *updateBuilder) Offset(offset uint64) UpdateBuilder {
 	b.offset = offset
 	b.offsetValid = true
 	return b
 }
 
-// Suffix adds an expression to the end of the query
 func (b *updateBuilder) Suffix(sql string, args ...interface{}) UpdateBuilder {
-	b.suffixes = append(b.suffixes, Expr(sql, args...))
+	b.suffixes = append(b.suffixes, expr{sql, args})
 
 	return b
 }

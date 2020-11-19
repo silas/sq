@@ -6,16 +6,15 @@ import (
 	"strings"
 )
 
-func ReplacePlaceholders(sql string) (string, error) {
-	return replacePlaceholders(sql, func(buf *bytes.Buffer, i int) error {
+func replacePlaceholders(sql string) (string, error) {
+	return replacePlaceholdersIter(sql, func(buf *bytes.Buffer, i int) error {
 		buf.WriteString("$")
 		buf.WriteString(strconv.Itoa(i))
 		return nil
 	})
 }
 
-// Placeholders returns a string with count ? placeholders joined with commas.
-func Placeholders(count int) string {
+func placeholders(count int) string {
 	if count < 1 {
 		return ""
 	}
@@ -23,7 +22,7 @@ func Placeholders(count int) string {
 	return strings.Repeat(",?", count)[1:]
 }
 
-func replacePlaceholders(sql string, replace func(buf *bytes.Buffer, i int) error) (string, error) {
+func replacePlaceholdersIter(sql string, replace func(buf *bytes.Buffer, i int) error) (string, error) {
 	buf := &bytes.Buffer{}
 	i := 0
 	for {

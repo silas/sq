@@ -9,27 +9,47 @@ import (
 
 // DeleteBuilder builds SQL DELETE statements.
 type DeleteBuilder interface {
+	// Prefix adds an expression to the beginning of the query.
 	Prefix(sql string, args ...interface{}) DeleteBuilder
+
+	// From sets the FROM clause of the query.
 	From(from string) DeleteBuilder
-	What(what ...string) DeleteBuilder
+
+	// Where adds WHERE expressions to the query.
 	Where(pred interface{}, args ...interface{}) DeleteBuilder
+
+	// OrderBy adds ORDER BY expressions to the query.
 	OrderBy(orderBys ...string) DeleteBuilder
+
+	// Limit sets a LIMIT clause on the query.
 	Limit(limit uint64) DeleteBuilder
+
+	// Offset sets a OFFSET clause on the query.
 	Offset(offset uint64) DeleteBuilder
+
+	// Suffix adds an expression to the end of the query
 	Suffix(sql string, args ...interface{}) DeleteBuilder
+
+	// JoinClause adds a join clause to the query.
 	JoinClause(join string) DeleteBuilder
+
+	// Join adds a JOIN clause to the query.
 	Join(join string) DeleteBuilder
+
+	// LeftJoin adds a LEFT JOIN clause to the query.
 	LeftJoin(join string) DeleteBuilder
+
+	// RightJoin adds a RIGHT JOIN clause to the query.
 	RightJoin(join string) DeleteBuilder
+
 	ToSQL() (sqlStr string, args []interface{}, err error)
 }
 
 type deleteBuilder struct {
 	prefixes   exprs
-	what       []string
 	from       string
 	joins      []string
-	whereParts []QueryBuilder
+	whereParts []StatementBuilder
 	orderBys   []string
 
 	limit       uint64
@@ -45,7 +65,6 @@ func NewDeleteBuilder() DeleteBuilder {
 	return &deleteBuilder{}
 }
 
-// ToSQL builds the query into a SQL string and bound args.
 func (b *deleteBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 	if len(b.from) == 0 {
 		err = fmt.Errorf("delete statements must specify a From table")
@@ -60,13 +79,6 @@ func (b *deleteBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 	}
 
 	sql.WriteString("DELETE ")
-	// following condition helps to avoid duplicate "from" value in DELETE query
-	// e.g. "DELETE a FROM a ..." which is valid for MySQL but not for PostgreSQL
-	if len(b.what) > 0 && (len(b.what) != 1 || b.what[0] != b.from) {
-		sql.WriteString(strings.Join(b.what, ", "))
-		sql.WriteString(" ")
-	}
-
 	sql.WriteString("FROM ")
 	sql.WriteString(b.from)
 
@@ -104,59 +116,36 @@ func (b *deleteBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 		args, _ = b.suffixes.AppendToSQL(sql, " ", args)
 	}
 
-	sqlStr, err = ReplacePlaceholders(sql.String())
+	sqlStr, err = replacePlaceholders(sql.String())
 	return
 }
 
-// Prefix adds an expression to the beginning of the query
 func (b *deleteBuilder) Prefix(sql string, args ...interface{}) DeleteBuilder {
-	b.prefixes = append(b.prefixes, Expr(sql, args...))
+	b.prefixes = append(b.prefixes, expr{sql, args})
 	return b
 }
 
-// From sets the FROM clause of the query.
 func (b *deleteBuilder) From(from string) DeleteBuilder {
 	b.from = from
 	return b
 }
 
-// What sets names of tables to be used for deleting from
-func (b *deleteBuilder) What(what ...string) DeleteBuilder {
-	filteredWhat := make([]string, 0, len(what))
-	for _, item := range what {
-		if len(item) > 0 {
-			filteredWhat = append(filteredWhat, item)
-		}
-	}
-
-	b.what = filteredWhat
-	if len(filteredWhat) == 1 {
-		b.From(filteredWhat[0])
-	}
-
-	return b
-}
-
-// Where adds WHERE expressions to the query.
 func (b *deleteBuilder) Where(pred interface{}, args ...interface{}) DeleteBuilder {
 	b.whereParts = append(b.whereParts, newWherePart(pred, args...))
 	return b
 }
 
-// OrderBy adds ORDER BY expressions to the query.
 func (b *deleteBuilder) OrderBy(orderBys ...string) DeleteBuilder {
 	b.orderBys = append(b.orderBys, orderBys...)
 	return b
 }
 
-// Limit sets a LIMIT clause on the query.
 func (b *deleteBuilder) Limit(limit uint64) DeleteBuilder {
 	b.limit = limit
 	b.limitValid = true
 	return b
 }
 
-// Offset sets a OFFSET clause on the query.
 func (b *deleteBuilder) Offset(offset uint64) DeleteBuilder {
 	b.offset = offset
 	b.offsetValid = true
@@ -164,31 +153,26 @@ func (b *deleteBuilder) Offset(offset uint64) DeleteBuilder {
 	return b
 }
 
-// Suffix adds an expression to the end of the query
 func (b *deleteBuilder) Suffix(sql string, args ...interface{}) DeleteBuilder {
-	b.suffixes = append(b.suffixes, Expr(sql, args...))
+	b.suffixes = append(b.suffixes, expr{sql, args})
 
 	return b
 }
 
-// JoinClause adds a join clause to the query.
 func (b *deleteBuilder) JoinClause(join string) DeleteBuilder {
 	b.joins = append(b.joins, join)
 
 	return b
 }
 
-// Join adds a JOIN clause to the query.
 func (b *deleteBuilder) Join(join string) DeleteBuilder {
 	return b.JoinClause("JOIN " + join)
 }
 
-// LeftJoin adds a LEFT JOIN clause to the query.
 func (b *deleteBuilder) LeftJoin(join string) DeleteBuilder {
 	return b.JoinClause("LEFT JOIN " + join)
 }
 
-// RightJoin adds a RIGHT JOIN clause to the query.
 func (b *deleteBuilder) RightJoin(join string) DeleteBuilder {
 	return b.JoinClause("RIGHT JOIN " + join)
 }
