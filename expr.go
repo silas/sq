@@ -16,9 +16,8 @@ type expr struct {
 
 // Expr builds value expressions for InsertBuilder and UpdateBuilder.
 //
-// Ex:
-//     .data(Expr("FROM_UNIXTIME(?)", t))
-func Expr(sql string, args ...interface{}) expr {
+//     .Values(Expr("FROM_UNIXTIME(?)", t))
+func Expr(sql string, args ...interface{}) StatementBuilder {
 	return expr{sql: sql, args: args}
 }
 
@@ -28,13 +27,13 @@ func (e expr) ToSQL() (string, []interface{}, error) {
 	}
 
 	args := make([]interface{}, 0, len(e.args))
-	sql, err := replacePlaceholders(e.sql, func(buf *bytes.Buffer, i int) error {
+	sql, err := replacePlaceholdersIter(e.sql, func(buf *bytes.Buffer, i int) error {
 		if i > len(e.args) {
 			buf.WriteRune('?')
 			return nil
 		}
 		switch arg := e.args[i-1].(type) {
-		case QueryBuilder:
+		case StatementBuilder:
 			sql, vs, err := arg.ToSQL()
 			if err != nil {
 				return err
@@ -74,15 +73,15 @@ func (es exprs) AppendToSQL(w io.Writer, sep string, args []interface{}) ([]inte
 
 // aliasExpr helps to alias part of SQL query generated with underlying "expr"
 type aliasExpr struct {
-	expr  QueryBuilder
+	expr  StatementBuilder
 	alias string
 }
 
 // Alias allows to define alias for column in SelectBuilder. Useful when column is
-// defined as complex expression like IF or CASE
-// Ex:
+// defined as complex expression like IF or CASE.
+//
 //		.Column(Alias(caseStmt, "case_column"))
-func Alias(expr QueryBuilder, alias string) aliasExpr {
+func Alias(expr StatementBuilder, alias string) StatementBuilder {
 	return aliasExpr{expr, alias}
 }
 
@@ -95,7 +94,7 @@ func (e aliasExpr) ToSQL() (sql string, args []interface{}, err error) {
 }
 
 // Eq is syntactic sugar for use with Where/Having/Set methods.
-// Ex:
+//
 //     .Where(Eq{"id": 1})
 type Eq map[string]interface{}
 
@@ -135,7 +134,7 @@ func (eq Eq) toSQL(useNotOpr bool) (sql string, args []interface{}, err error) {
 				for i := 0; i < valVal.Len(); i++ {
 					args = append(args, valVal.Index(i).Interface())
 				}
-				expr = fmt.Sprintf("%s %s (%s)", key, inOpr, Placeholders(valVal.Len()))
+				expr = fmt.Sprintf("%s %s (%s)", key, inOpr, placeholders(valVal.Len()))
 			} else {
 				expr = fmt.Sprintf("%s %s ?", key, equalOpr)
 				args = append(args, val)
@@ -147,23 +146,21 @@ func (eq Eq) toSQL(useNotOpr bool) (sql string, args []interface{}, err error) {
 	return
 }
 
-// ToSQL builds the query into a SQL string and bound args.
 func (eq Eq) ToSQL() (sql string, args []interface{}, err error) {
 	return eq.toSQL(false)
 }
 
 // NotEq is syntactic sugar for use with Where/Having/Set methods.
-// Ex:
+//
 //     .Where(NotEq{"id": 1}) == "id <> 1"
 type NotEq Eq
 
-// ToSQL builds the query into a SQL string and bound args.
 func (neq NotEq) ToSQL() (sql string, args []interface{}, err error) {
 	return Eq(neq).toSQL(true)
 }
 
 // Lt is syntactic sugar for use with Where/Having/Set methods.
-// Ex:
+//
 //     .Where(Lt{"id": 1})
 type Lt map[string]interface{}
 
@@ -194,7 +191,7 @@ func (lt Lt) toSQL(opposite, orEq bool) (sql string, args []interface{}, err err
 		if val == nil {
 			err = fmt.Errorf("cannot use null with less than or greater than operators")
 			return
-		} else if v, ok := val.(QueryBuilder); ok {
+		} else if v, ok := val.(StatementBuilder); ok {
 			var s string
 			var a []interface{}
 			s, a, err = v.ToSQL()
@@ -225,7 +222,7 @@ func (lt Lt) ToSQL() (sql string, args []interface{}, err error) {
 }
 
 // LtOrEq is syntactic sugar for use with Where/Having/Set methods.
-// Ex:
+//
 //     .Where(LtOrEq{"id": 1}) == "id <= 1"
 type LtOrEq Lt
 
@@ -234,7 +231,7 @@ func (ltOrEq LtOrEq) ToSQL() (sql string, args []interface{}, err error) {
 }
 
 // Gt is syntactic sugar for use with Where/Having/Set methods.
-// Ex:
+//
 //     .Where(Gt{"id": 1}) == "id > 1"
 type Gt Lt
 
@@ -243,7 +240,7 @@ func (gt Gt) ToSQL() (sql string, args []interface{}, err error) {
 }
 
 // GtOrEq is syntactic sugar for use with Where/Having/Set methods.
-// Ex:
+//
 //     .Where(GtOrEq{"id": 1}) == "id >= 1"
 type GtOrEq Lt
 
@@ -251,7 +248,7 @@ func (gtOrEq GtOrEq) ToSQL() (sql string, args []interface{}, err error) {
 	return Lt(gtOrEq).toSQL(true, true)
 }
 
-type conj []QueryBuilder
+type conj []StatementBuilder
 
 func (c conj) join(sep string) (sql string, args []interface{}, err error) {
 	var sqlParts []string
@@ -271,8 +268,8 @@ func (c conj) join(sep string) (sql string, args []interface{}, err error) {
 	return
 }
 
-// And is syntactic sugar that glues where/having parts with AND clause
-// Ex:
+// And is syntactic sugar that glues where/having parts with AND clause.
+//
 //     .Where(And{Expr("a > ?", 15), Expr("b < ?", 20), Expr("c is TRUE")})
 type And conj
 
@@ -282,18 +279,17 @@ func (a And) ToSQL() (string, []interface{}, error) {
 }
 
 // Or is syntactic sugar that glues where/having parts with OR clause
-// Ex:
+//
 //     .Where(And{Expr("a > ?", 15), Expr("b < ?", 20), Expr("c is TRUE")})
 type Or conj
 
-// ToSQL builds the query into a SQL string and bound args.
 func (o Or) ToSQL() (string, []interface{}, error) {
 	return conj(o).join(" OR ")
 }
 
 func hasQueryBuilder(args []interface{}) bool {
 	for _, arg := range args {
-		_, ok := arg.(QueryBuilder)
+		_, ok := arg.(StatementBuilder)
 		if ok {
 			return true
 		}

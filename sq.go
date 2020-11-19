@@ -66,16 +66,16 @@ func (p *pgxPool) Close() {
 type Result = pgconn.CommandTag
 
 type Tx interface {
-	Exec(ctx context.Context, qb QueryBuilder) (Result, error)
-	Query(ctx context.Context, qb QueryBuilder) (Rows, error)
-	QueryRow(ctx context.Context, qb QueryBuilder) Row
+	Exec(ctx context.Context, qb StatementBuilder) (Result, error)
+	Query(ctx context.Context, qb StatementBuilder) (Rows, error)
+	QueryRow(ctx context.Context, qb StatementBuilder) Row
 }
 
 type Transaction struct {
 	tx pgx.Tx
 }
 
-func (tx *Transaction) Exec(ctx context.Context, qb QueryBuilder) (Result, error) {
+func (tx *Transaction) Exec(ctx context.Context, qb StatementBuilder) (Result, error) {
 	sql, args, err := qb.ToSQL()
 	if err != nil {
 		return nil, err
@@ -84,7 +84,7 @@ func (tx *Transaction) Exec(ctx context.Context, qb QueryBuilder) (Result, error
 	return tx.tx.Exec(ctx, sql, args...)
 }
 
-func (tx *Transaction) Query(ctx context.Context, qb QueryBuilder) (Rows, error) {
+func (tx *Transaction) Query(ctx context.Context, qb StatementBuilder) (Rows, error) {
 	sql, args, err := qb.ToSQL()
 	if err != nil {
 		return nil, err
@@ -93,7 +93,7 @@ func (tx *Transaction) Query(ctx context.Context, qb QueryBuilder) (Rows, error)
 	return tx.tx.Query(ctx, sql, args...)
 }
 
-func (tx *Transaction) QueryRow(ctx context.Context, qb QueryBuilder) Row {
+func (tx *Transaction) QueryRow(ctx context.Context, qb StatementBuilder) Row {
 	sql, args, err := qb.ToSQL()
 	if err != nil {
 		return rowError{err}

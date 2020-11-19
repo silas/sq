@@ -10,7 +10,7 @@ import (
 )
 
 func TestWherePartsAppendToSQL(t *testing.T) {
-	parts := []QueryBuilder{
+	parts := []StatementBuilder{
 		newWherePart("x = ?", 1),
 		newWherePart(nil),
 		newWherePart(Eq{"y": 2}),
@@ -22,7 +22,7 @@ func TestWherePartsAppendToSQL(t *testing.T) {
 }
 
 func TestWherePartsAppendToSQLErr(t *testing.T) {
-	parts := []QueryBuilder{newWherePart(1)}
+	parts := []StatementBuilder{newWherePart(1)}
 	_, err := appendToSQL(parts, &bytes.Buffer{}, "", []interface{}{})
 	assert.Error(t, err)
 }

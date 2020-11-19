@@ -12,7 +12,7 @@ func TestSelectBuilderToSQL(t *testing.T) {
 		Prefix("WITH prefix AS ?", 0).
 		Distinct().
 		Columns("c").
-		Column("IF(d IN ("+Placeholders(3)+"), 1, 0) as stat_column", 1, 2, 3).
+		Column("IF(d IN ("+placeholders(3)+"), 1, 0) as stat_column", 1, 2, 3).
 		Column(Expr("a > ?", 100)).
 		Column(Alias(Eq{"b": []int{101, 102, 103}}, "b_alias")).
 		Column(Alias(subQ, "subq")).
@@ -59,7 +59,7 @@ func BenchmarkSelectBuilderToSQL(b *testing.B) {
 			Prefix("WITH prefix AS ?", 0).
 			Distinct().
 			Columns("c").
-			Column("IF(d IN ("+Placeholders(3)+"), 1, 0) as stat_column", 1, 2, 3).
+			Column("IF(d IN ("+placeholders(3)+"), 1, 0) as stat_column", 1, 2, 3).
 			Column(Expr("a > ?", 100)).
 			Column(Eq{"b": []int{101, 102, 103}}).
 			From("e").

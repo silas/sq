@@ -10,7 +10,7 @@ type part struct {
 	args []interface{}
 }
 
-func newPart(pred interface{}, args ...interface{}) QueryBuilder {
+func newPart(pred interface{}, args ...interface{}) StatementBuilder {
 	return &part{pred, args}
 }
 
@@ -18,18 +18,18 @@ func (p part) ToSQL() (sql string, args []interface{}, err error) {
 	switch pred := p.pred.(type) {
 	case nil:
 		// no-op
-	case QueryBuilder:
+	case StatementBuilder:
 		sql, args, err = pred.ToSQL()
 	case string:
 		sql = pred
 		args = p.args
 	default:
-		err = fmt.Errorf("expected string or QueryBuilder, not %T", pred)
+		err = fmt.Errorf("expected string or StatementBuilder, not %T", pred)
 	}
 	return
 }
 
-func appendToSQL(parts []QueryBuilder, w io.Writer, sep string, args []interface{}) ([]interface{}, error) {
+func appendToSQL(parts []StatementBuilder, w io.Writer, sep string, args []interface{}) ([]interface{}, error) {
 	for i, p := range parts {
 		partSQL, partArgs, err := p.ToSQL()
 		if err != nil {

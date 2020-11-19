@@ -10,8 +10,8 @@ func Select(columns ...string) SelectBuilder {
 // Insert returns a new InsertBuilder with the given table name.
 //
 // See InsertBuilder.Into.
-func Insert(into string) InsertBuilder {
-	return NewInsertBuilder().Into(into)
+func Insert(table string) InsertBuilder {
+	return NewInsertBuilder().Into(table)
 }
 
 // Update returns a new UpdateBuilder with the given table name.
@@ -23,9 +23,9 @@ func Update(table string) UpdateBuilder {
 
 // Delete returns a new DeleteBuilder for given table names.
 //
-// See DeleteBuilder.Table.
-func Delete(what ...string) DeleteBuilder {
-	return NewDeleteBuilder().What(what...)
+// See DeleteBuilder.From.
+func Delete(table string) DeleteBuilder {
+	return NewDeleteBuilder().From(table)
 }
 
 // Where returns a new WhereBuilder.
@@ -33,8 +33,7 @@ func Where(pred interface{}, args ...interface{}) WhereBuilder {
 	return NewWhereBuilder().Where(pred, args...)
 }
 
-// Case returns a new CaseBuilder
-// "what" represents case value
+// Case returns a new CaseBuilder.
 func Case(what ...interface{}) CaseBuilder {
 	b := &caseBuilder{}
 
