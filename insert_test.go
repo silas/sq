@@ -37,16 +37,6 @@ func TestInsertBuilderToSQLErr(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestInsertBuilderPlaceholders(t *testing.T) {
-	b := Insert("test").Values(1, 2)
-
-	sql, _, _ := b.PlaceholderFormat(Question).ToSQL()
-	assert.Equal(t, "INSERT INTO test VALUES (?,?)", sql)
-
-	sql, _, _ = b.PlaceholderFormat(Dollar).ToSQL()
-	assert.Equal(t, "INSERT INTO test VALUES ($1,$2)", sql)
-}
-
 func TestInsertBuilderSetMap(t *testing.T) {
 	b := Insert("table").SetMap(Eq{"field1": 1})
 

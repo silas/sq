@@ -11,8 +11,6 @@ import (
 
 // DeleteBuilder builds SQL DELETE statements.
 type DeleteBuilder struct {
-	StatementBuilderType
-
 	prefixes   exprs
 	what       []string
 	from       string
@@ -29,15 +27,8 @@ type DeleteBuilder struct {
 }
 
 // NewDeleteBuilder creates new instance of DeleteBuilder
-func NewDeleteBuilder(b StatementBuilderType) *DeleteBuilder {
-	return &DeleteBuilder{StatementBuilderType: b}
-}
-
-// PlaceholderFormat sets PlaceholderFormat (e.g. Question or Dollar) for the
-// query.
-func (b *DeleteBuilder) PlaceholderFormat(f PlaceholderFormat) *DeleteBuilder {
-	b.placeholderFormat = f
-	return b
+func NewDeleteBuilder() *DeleteBuilder {
+	return &DeleteBuilder{}
 }
 
 // ToSQL builds the query into a SQL string and bound args.
@@ -83,7 +74,7 @@ func (b *DeleteBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 		sql.WriteString(strings.Join(b.orderBys, ", "))
 	}
 
-	// TODO: limit == 0 and offswt == 0 are valid. Need to go dbr way and implement offsetValid and limitValid
+	// TODO: limit == 0 and offset == 0 are valid. Need to go dbr way and implement offsetValid and limitValid
 	if b.limitValid {
 		sql.WriteString(" LIMIT ")
 		sql.WriteString(strconv.FormatUint(b.limit, 10))
@@ -99,7 +90,7 @@ func (b *DeleteBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 		args, _ = b.suffixes.AppendToSQL(sql, " ", args)
 	}
 
-	sqlStr, err = b.placeholderFormat.ReplacePlaceholders(sql.String())
+	sqlStr, err = ReplacePlaceholders(sql.String())
 	return
 }
 

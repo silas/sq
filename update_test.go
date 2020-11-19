@@ -55,13 +55,3 @@ func TestUpdateBuilderToSQLErr(t *testing.T) {
 	_, _, err = Update("x").ToSQL()
 	assert.Error(t, err)
 }
-
-func TestUpdateBuilderPlaceholders(t *testing.T) {
-	b := Update("test").SetMap(Eq{"x": 1, "y": 2})
-
-	sql, _, _ := b.PlaceholderFormat(Question).ToSQL()
-	assert.Equal(t, "UPDATE test SET x = ?, y = ?", sql)
-
-	sql, _, _ = b.PlaceholderFormat(Dollar).ToSQL()
-	assert.Equal(t, "UPDATE test SET x = $1, y = $2", sql)
-}

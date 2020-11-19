@@ -8,8 +8,6 @@ import (
 
 // InsertBuilder builds SQL INSERT statements.
 type InsertBuilder struct {
-	StatementBuilderType
-
 	prefixes exprs
 	options  []string
 	into     string
@@ -19,15 +17,8 @@ type InsertBuilder struct {
 }
 
 // NewInsertBuilder creates new instance of InsertBuilder
-func NewInsertBuilder(b StatementBuilderType) *InsertBuilder {
-	return &InsertBuilder{StatementBuilderType: b}
-}
-
-// PlaceholderFormat sets PlaceholderFormat (e.g. Question or Dollar) for the
-// query.
-func (b *InsertBuilder) PlaceholderFormat(f PlaceholderFormat) *InsertBuilder {
-	b.placeholderFormat = f
-	return b
+func NewInsertBuilder() *InsertBuilder {
+	return &InsertBuilder{}
 }
 
 // ToSQL builds the query into a SQL string and bound args.
@@ -100,7 +91,7 @@ func (b *InsertBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 		args, _ = b.suffixes.AppendToSQL(sql, " ", args)
 	}
 
-	sqlStr, err = b.placeholderFormat.ReplacePlaceholders(sql.String())
+	sqlStr, err = ReplacePlaceholders(sql.String())
 	return
 }
 

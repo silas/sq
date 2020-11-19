@@ -27,21 +27,12 @@ func (p wherePart) ToSQL() (sql string, args []interface{}, err error) {
 
 // WhereBuilder builds SQL where statements.
 type WhereBuilder struct {
-	StatementBuilderType
-
 	whereParts []QueryBuilder
 }
 
 // NewWhereBuilder creates new instance of UpdateBuilder
-func NewWhereBuilder(b StatementBuilderType) *WhereBuilder {
-	return &WhereBuilder{StatementBuilderType: b}
-}
-
-// PlaceholderFormat sets PlaceholderFormat (e.g. Question or Dollar) for the
-// query.
-func (b *WhereBuilder) PlaceholderFormat(f PlaceholderFormat) *WhereBuilder {
-	b.placeholderFormat = f
-	return b
+func NewWhereBuilder() *WhereBuilder {
+	return &WhereBuilder{}
 }
 
 // Where adds WHERE expressions to the query.
@@ -54,21 +45,21 @@ func (b *WhereBuilder) Where(pred interface{}, args ...interface{}) *WhereBuilde
 
 // Select returns a SelectBuilder for this WhereBuilder.
 func (b *WhereBuilder) Select(columns ...string) *SelectBuilder {
-	nb := NewSelectBuilder(b.StatementBuilderType).Columns(columns...)
+	nb := NewSelectBuilder().Columns(columns...)
 	nb.whereParts = b.whereParts
 	return nb
 }
 
 // Update returns a UpdateBuilder for this WhereBuilder.
 func (b *WhereBuilder) Update(table string) *UpdateBuilder {
-	nb := NewUpdateBuilder(b.StatementBuilderType).Table(table)
+	nb := NewUpdateBuilder().Table(table)
 	nb.whereParts = b.whereParts
 	return nb
 }
 
 // Delete returns a DeleteBuilder for this WhereBuilder.
 func (b *WhereBuilder) Delete(what ...string) *DeleteBuilder {
-	nb := NewDeleteBuilder(b.StatementBuilderType).What(what...)
+	nb := NewDeleteBuilder().What(what...)
 	nb.whereParts = b.whereParts
 	return nb
 }

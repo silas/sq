@@ -17,8 +17,6 @@ type setClause struct {
 
 // UpdateBuilder builds SQL UPDATE statements.
 type UpdateBuilder struct {
-	StatementBuilderType
-
 	prefixes   exprs
 	table      string
 	setClauses []setClause
@@ -34,15 +32,8 @@ type UpdateBuilder struct {
 }
 
 // NewUpdateBuilder creates new instance of UpdateBuilder
-func NewUpdateBuilder(b StatementBuilderType) *UpdateBuilder {
-	return &UpdateBuilder{StatementBuilderType: b}
-}
-
-// PlaceholderFormat sets PlaceholderFormat (e.g. Question or Dollar) for the
-// query.
-func (b *UpdateBuilder) PlaceholderFormat(f PlaceholderFormat) *UpdateBuilder {
-	b.placeholderFormat = f
-	return b
+func NewUpdateBuilder() *UpdateBuilder {
+	return &UpdateBuilder{}
 }
 
 // ToSQL builds the query into a SQL string and bound args.
@@ -115,7 +106,7 @@ func (b *UpdateBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 		args, _ = b.suffixes.AppendToSQL(sql, " ", args)
 	}
 
-	sqlStr, err = b.placeholderFormat.ReplacePlaceholders(sql.String())
+	sqlStr, err = ReplacePlaceholders(sql.String())
 	return
 }
 

@@ -9,8 +9,6 @@ import (
 
 // SelectBuilder builds SQL SELECT statements.
 type SelectBuilder struct {
-	StatementBuilderType
-
 	prefixes    exprs
 	distinct    bool
 	columns     []QueryBuilder
@@ -30,15 +28,8 @@ type SelectBuilder struct {
 }
 
 // NewSelectBuilder creates new instance of SelectBuilder
-func NewSelectBuilder(b StatementBuilderType) *SelectBuilder {
-	return &SelectBuilder{StatementBuilderType: b}
-}
-
-// PlaceholderFormat sets PlaceholderFormat (e.g. Question or Dollar) for the
-// query.
-func (b *SelectBuilder) PlaceholderFormat(f PlaceholderFormat) *SelectBuilder {
-	b.placeholderFormat = f
-	return b
+func NewSelectBuilder() *SelectBuilder {
+	return &SelectBuilder{}
 }
 
 // ToSQL builds the query into a SQL string and bound args.
@@ -120,7 +111,7 @@ func (b *SelectBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 		args, _ = b.suffixes.AppendToSQL(sql, " ", args)
 	}
 
-	sqlStr, err = b.placeholderFormat.ReplacePlaceholders(sql.String())
+	sqlStr, err = ReplacePlaceholders(sql.String())
 	return
 
 }

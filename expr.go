@@ -40,7 +40,7 @@ func (e expr) ToSQL() (string, []interface{}, error) {
 				return err
 			}
 			args = append(args, vs...)
-			fmt.Fprint(buf, sql)
+			buf.WriteString(sql)
 		default:
 			args = append(args, arg)
 			buf.WriteRune('?')

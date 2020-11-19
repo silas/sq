@@ -100,13 +100,3 @@ func TestSelectBuilderToSQLErr(t *testing.T) {
 	_, _, err := Select().From("x").ToSQL()
 	assert.Error(t, err)
 }
-
-func TestSelectBuilderPlaceholders(t *testing.T) {
-	b := Select("test").Where("x = ? AND y = ?")
-
-	sql, _, _ := b.PlaceholderFormat(Question).ToSQL()
-	assert.Equal(t, "SELECT test WHERE x = ? AND y = ?", sql)
-
-	sql, _, _ = b.PlaceholderFormat(Dollar).ToSQL()
-	assert.Equal(t, "SELECT test WHERE x = $1 AND y = $2", sql)
-}

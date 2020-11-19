@@ -2,39 +2,14 @@ package sq
 
 import (
 	"bytes"
-	"fmt"
+	"strconv"
 	"strings"
 )
 
-// PlaceholderFormat is the interface that wraps the ReplacePlaceholders method.
-//
-// ReplacePlaceholders takes a SQL statement and replaces each question mark
-// placeholder with a (possibly different) SQL placeholder.
-type PlaceholderFormat interface {
-	ReplacePlaceholders(sql string) (string, error)
-}
-
-var (
-	// Question is a PlaceholderFormat instance that leaves placeholders as
-	// question marks.
-	Question = questionFormat{}
-
-	// Dollar is a PlaceholderFormat instance that replaces placeholders with
-	// dollar-prefixed positional placeholders (e.g. $1, $2, $3).
-	Dollar = dollarFormat{}
-)
-
-type questionFormat struct{}
-
-func (_ questionFormat) ReplacePlaceholders(sql string) (string, error) {
-	return sql, nil
-}
-
-type dollarFormat struct{}
-
-func (_ dollarFormat) ReplacePlaceholders(sql string) (string, error) {
+func ReplacePlaceholders(sql string) (string, error) {
 	return replacePlaceholders(sql, func(buf *bytes.Buffer, i int) error {
-		fmt.Fprintf(buf, "$%d", i)
+		buf.WriteString("$")
+		buf.WriteString(strconv.Itoa(i))
 		return nil
 	})
 }
