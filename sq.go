@@ -26,12 +26,12 @@ type pgxPool struct {
 }
 
 func Connect(ctx context.Context, connString string) (Pool, error) {
-	pool, err := pgxpool.Connect(ctx, connString)
+	config, err := ParseConfig(connString)
 	if err != nil {
 		return nil, err
 	}
 
-	return &pgxPool{pool: pool}, nil
+	return ConnectConfig(ctx, config)
 }
 
 func ParseConfig(connString string) (*Config, error) {

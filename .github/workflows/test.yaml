@@ -8,6 +8,13 @@ on:
     branches:
     - main
 
+env:
+  PGHOST: 127.0.0.1
+  PGPORT: 5432
+  PGDATABASE: postgres
+  PGUSER: postgres
+  PGPASSWORD: postgres
+
 jobs:
   build:
     name: Build
@@ -20,8 +27,12 @@ jobs:
       id: go
     - name: Checkout
       uses: actions/checkout@v2
+    - name: Start postgres
+      run: docker run --rm -d -p $PGPORT:$PGPORT -e POSTGRES_USER=$PGUSER -e POSTGRES_PASSWORD=$PGPASSWORD postgres:12
     - name: Get Go dependencies
       run: go mod download
+    - name: Wait on postgres
+      run: until psql -c 'select 1' &>/dev/null; do sleep 1; done
     - name: Test
       run: go test -v -race ./...
   lint:
