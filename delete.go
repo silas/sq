@@ -116,7 +116,7 @@ func (b *deleteBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 		args, _ = b.suffixes.AppendToSQL(sql, " ", args)
 	}
 
-	sqlStr, err = replacePlaceholders(sql.String())
+	sqlStr = sql.String()
 	return
 }
 

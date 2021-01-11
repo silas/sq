@@ -37,15 +37,15 @@ func TestSelectBuilderToSQL(t *testing.T) {
 	assert.NoError(t, err)
 
 	expectedSQL :=
-		"WITH prefix AS $1 " +
-			"SELECT DISTINCT a, b, c, IF(d IN ($2,$3,$4), 1, 0) as stat_column, a > $5, " +
-			"(b IN ($6,$7,$8)) AS b_alias, " +
+		"WITH prefix AS ? " +
+			"SELECT DISTINCT a, b, c, IF(d IN (?,?,?), 1, 0) as stat_column, a > ?, " +
+			"(b IN (?,?,?)) AS b_alias, " +
 			"(SELECT aa, bb FROM dd) AS subq " +
 			"FROM e " +
 			"CROSS JOIN j1 JOIN j2 LEFT JOIN j3 RIGHT JOIN j4 " +
-			"WHERE f = $9 AND g = $10 AND h = $11 AND i IN ($12,$13,$14) AND (j = $15 OR (k = $16 AND true)) " +
+			"WHERE f = ? AND g = ? AND h = ? AND i IN (?,?,?) AND (j = ? OR (k = ? AND true)) " +
 			"GROUP BY l HAVING m = n ORDER BY o ASC, p DESC LIMIT 12 OFFSET 13 " +
-			"FETCH FIRST $17 ROWS ONLY"
+			"FETCH FIRST ? ROWS ONLY"
 	assert.Equal(t, expectedSQL, sql)
 
 	expectedArgs := []interface{}{0, 1, 2, 3, 100, 101, 102, 103, 4, 5, 6, 7, 8, 9, 10, 11, 14}

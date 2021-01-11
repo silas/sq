@@ -68,7 +68,7 @@ func TestWhereBuilderToSelectSQL(t *testing.T) {
 		ToSQL()
 	require.NoError(t, err)
 
-	expectedSQL := "SELECT name FROM test WHERE hello = $1"
+	expectedSQL := "SELECT name FROM test WHERE hello = ?"
 	require.Equal(t, expectedSQL, sql)
 
 	expectedArgs := []interface{}{"world"}
@@ -81,7 +81,7 @@ func TestWhereBuilderToDeleteSQL(t *testing.T) {
 		ToSQL()
 	require.NoError(t, err)
 
-	expectedSQL := "DELETE FROM test WHERE hello = $1"
+	expectedSQL := "DELETE FROM test WHERE hello = ?"
 	require.Equal(t, expectedSQL, sql)
 
 	expectedArgs := []interface{}{"world"}
@@ -95,7 +95,7 @@ func TestWhereBuilderToUpdateSQL(t *testing.T) {
 		ToSQL()
 	require.NoError(t, err)
 
-	expectedSQL := "UPDATE test SET hello = $1 WHERE hello = $2"
+	expectedSQL := "UPDATE test SET hello = ? WHERE hello = ?"
 	require.Equal(t, expectedSQL, sql)
 
 	expectedArgs := []interface{}{"universe", "world"}

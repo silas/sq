@@ -24,7 +24,7 @@ func TestEqInExprToSQL(t *testing.T) {
 	sql, args, err := b.ToSQL()
 	assert.NoError(t, err)
 
-	expectedSQL := "id IN (SELECT id FROM test WHERE num > $1)"
+	expectedSQL := "id IN (SELECT id FROM test WHERE num > ?)"
 	assert.Equal(t, expectedSQL, sql)
 
 	expectedArgs := []interface{}{5}

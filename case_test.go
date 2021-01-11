@@ -22,7 +22,7 @@ func TestCaseWithVal(t *testing.T) {
 	expectedSQL := "SELECT CASE number " +
 		"WHEN 1 THEN one " +
 		"WHEN 2 THEN two " +
-		"ELSE $1 " +
+		"ELSE ? " +
 		"END " +
 		"FROM table"
 	assert.Equal(t, expectedSQL, sql)
@@ -42,7 +42,7 @@ func TestCaseWithComplexVal(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	expectedSQL := "SELECT (CASE $1 > $2 " +
+	expectedSQL := "SELECT (CASE ? > ? " +
 		"WHEN true THEN 'T' " +
 		"END) AS complexCase " +
 		"FROM table"
@@ -63,8 +63,8 @@ func TestCaseWithNoVal(t *testing.T) {
 	assert.NoError(t, err)
 
 	expectedSQL := "SELECT CASE " +
-		"WHEN x = $1 THEN x is zero " +
-		"WHEN x > $2 THEN CONCAT('x is greater than ', $3) " +
+		"WHEN x = ? THEN x is zero " +
+		"WHEN x > ? THEN CONCAT('x is greater than ', ?) " +
 		"END " +
 		"FROM table"
 
@@ -84,8 +84,8 @@ func TestCaseWithExpr(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	expectedSQL := "SELECT CASE x = $1 " +
-		"WHEN true THEN $2 " +
+	expectedSQL := "SELECT CASE x = ? " +
+		"WHEN true THEN ? " +
 		"ELSE 42 " +
 		"END " +
 		"FROM table"
@@ -114,8 +114,8 @@ func TestMultipleCase(t *testing.T) {
 	assert.NoError(t, err)
 
 	expectedSQL := "SELECT " +
-		"(CASE x = $1 WHEN true THEN $2 ELSE 42 END) AS case_noval, " +
-		"(CASE WHEN x = $3 THEN 'x is zero' WHEN x > $4 THEN CONCAT('x is greater than ', $5) END) AS case_expr " +
+		"(CASE x = ? WHEN true THEN ? ELSE 42 END) AS case_noval, " +
+		"(CASE WHEN x = ? THEN 'x is zero' WHEN x > ? THEN CONCAT('x is greater than ', ?) END) AS case_expr " +
 		"FROM table"
 
 	assert.Equal(t, expectedSQL, sql)

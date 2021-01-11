@@ -22,10 +22,10 @@ func TestUpdateBuilderToSQL(t *testing.T) {
 	assert.NoError(t, err)
 
 	expectedSQL :=
-		"WITH prefix AS $1 " +
-			"UPDATE a SET b = $2 + 1, c = $3 WHERE d = $4 " +
+		"WITH prefix AS ? " +
+			"UPDATE a SET b = ? + 1, c = ? WHERE d = ? " +
 			"ORDER BY e LIMIT 4 OFFSET 5 " +
-			"RETURNING $5"
+			"RETURNING ?"
 	assert.Equal(t, expectedSQL, sql)
 
 	expectedArgs := []interface{}{0, 1, 2, 3, 6}
@@ -41,7 +41,7 @@ func TestUpdateBuilderZeroOffsetLimit(t *testing.T) {
 	sql, args, err := qb.ToSQL()
 	assert.NoError(t, err)
 
-	expectedSQL := "UPDATE a SET b = $1 LIMIT 0 OFFSET 0"
+	expectedSQL := "UPDATE a SET b = ? LIMIT 0 OFFSET 0"
 	assert.Equal(t, expectedSQL, sql)
 
 	expectedArgs := []interface{}{true}

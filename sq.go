@@ -81,6 +81,11 @@ func (tx *Transaction) Exec(ctx context.Context, qb StatementBuilder) (Result, e
 		return nil, err
 	}
 
+	sql, err = replacePlaceholders(sql)
+	if err != nil {
+		return nil, err
+	}
+
 	return tx.tx.Exec(ctx, sql, args...)
 }
 
@@ -90,11 +95,21 @@ func (tx *Transaction) Query(ctx context.Context, qb StatementBuilder) (Rows, er
 		return nil, err
 	}
 
+	sql, err = replacePlaceholders(sql)
+	if err != nil {
+		return nil, err
+	}
+
 	return tx.tx.Query(ctx, sql, args...)
 }
 
 func (tx *Transaction) QueryRow(ctx context.Context, qb StatementBuilder) Row {
 	sql, args, err := qb.ToSQL()
+	if err != nil {
+		return rowError{err}
+	}
+
+	sql, err = replacePlaceholders(sql)
 	if err != nil {
 		return rowError{err}
 	}

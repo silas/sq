@@ -20,9 +20,9 @@ func TestDeleteBuilderToSQL(t *testing.T) {
 	assert.NoError(t, err)
 
 	expectedSQL :=
-		"WITH prefix AS $1 " +
-			"DELETE FROM a WHERE b = $2 ORDER BY c LIMIT 2 OFFSET 3 " +
-			"RETURNING $3"
+		"WITH prefix AS ? " +
+			"DELETE FROM a WHERE b = ? ORDER BY c LIMIT 2 OFFSET 3 " +
+			"RETURNING ?"
 	assert.Equal(t, expectedSQL, sql)
 
 	expectedArgs := []interface{}{0, 1, 4}
@@ -36,7 +36,7 @@ func TestDeleteWithoutFrom(t *testing.T) {
 	sql, args, err := b.ToSQL()
 	assert.NoError(t, err)
 
-	expectedSQL := "DELETE FROM a WHERE b = $1"
+	expectedSQL := "DELETE FROM a WHERE b = ?"
 	assert.Equal(t, expectedSQL, sql)
 	expectedArgs := []interface{}{1}
 	assert.Equal(t, expectedArgs, args)
