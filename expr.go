@@ -124,6 +124,16 @@ func (eq Eq) toSQL(useNotOpr bool) (sql string, args []interface{}, err error) {
 
 		if val == nil {
 			expr = fmt.Sprintf("%s %s NULL", key, nullOpr)
+		} else if v, ok := val.(StatementBuilder); ok {
+			var s string
+			var a []interface{}
+			s, a, err = v.ToSQL()
+			if err != nil {
+				return
+			}
+
+			expr = fmt.Sprintf("%s %s (%s)", key, inOpr, s)
+			args = append(args, a...)
 		} else {
 			valVal := reflect.ValueOf(val)
 			if valVal.Kind() == reflect.Array || valVal.Kind() == reflect.Slice {

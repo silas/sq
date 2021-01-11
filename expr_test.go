@@ -19,6 +19,18 @@ func TestEqToSQL(t *testing.T) {
 	assert.Equal(t, expectedArgs, args)
 }
 
+func TestEqInExprToSQL(t *testing.T) {
+	b := Eq{"id": Select("id").From("test").Where("num > ?", 5)}
+	sql, args, err := b.ToSQL()
+	assert.NoError(t, err)
+
+	expectedSQL := "id IN (SELECT id FROM test WHERE num > $1)"
+	assert.Equal(t, expectedSQL, sql)
+
+	expectedArgs := []interface{}{5}
+	assert.Equal(t, expectedArgs, args)
+}
+
 func TestEqInToSQL(t *testing.T) {
 	b := Eq{"id": []int{1, 2, 3}}
 	sql, args, err := b.ToSQL()
