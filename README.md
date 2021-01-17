@@ -1,6 +1,6 @@
 # sq
 
-Fluent SQL generator for Go.
+Fluent SQL generator for Go and PostgreSQL.
 
 ``` go
 package main
@@ -36,5 +36,7 @@ func main() {
 ```
 
 This is a fork of [sqrl][sqrl].
+
+NOTE: The API for this library is not yet stable, expect breaking changes.
 
 [sqrl]: https://github.com/elgris/sqrl
