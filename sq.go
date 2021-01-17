@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	ErrNoRows = pgx.ErrNoRows
-	ErrTxClosed = pgx.ErrTxClosed
+	ErrNoRows           = pgx.ErrNoRows
+	ErrTxClosed         = pgx.ErrTxClosed
 	ErrTxCommitRollback = pgx.ErrTxCommitRollback
 )
 

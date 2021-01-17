@@ -29,16 +29,16 @@ type SelectBuilder interface {
 	From(from string) SelectBuilder
 
 	// JoinClause adds a join clause to the query.
-	JoinClause(join string) SelectBuilder
+	JoinClause(join string, args ...interface{}) SelectBuilder
 
 	// Join adds a JOIN clause to the query.
-	Join(join string) SelectBuilder
+	Join(join string, args ...interface{}) SelectBuilder
 
 	// LeftJoin adds a LEFT JOIN clause to the query.
-	LeftJoin(join string) SelectBuilder
+	LeftJoin(join string, args ...interface{}) SelectBuilder
 
 	// RightJoin adds a RIGHT JOIN clause to the query.
-	RightJoin(join string) SelectBuilder
+	RightJoin(join string, args ...interface{}) SelectBuilder
 
 	// Where adds an expression to the WHERE clause of the query.
 	//
@@ -90,7 +90,7 @@ type selectBuilder struct {
 	distinct    bool
 	columns     []StatementBuilder
 	from        string
-	joins       []string
+	joins       exprs
 	whereParts  []StatementBuilder
 	groupBys    []string
 	havingParts []StatementBuilder
@@ -142,7 +142,10 @@ func (b *selectBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 
 	if len(b.joins) > 0 {
 		sql.WriteString(" ")
-		sql.WriteString(strings.Join(b.joins, " "))
+		args, err = b.joins.AppendToSQL(sql, " ", args)
+		if err != nil {
+			return
+		}
 	}
 
 	if len(b.whereParts) > 0 {
@@ -222,22 +225,22 @@ func (b *selectBuilder) From(from string) SelectBuilder {
 	return b
 }
 
-func (b *selectBuilder) JoinClause(join string) SelectBuilder {
-	b.joins = append(b.joins, join)
+func (b *selectBuilder) JoinClause(join string, args ...interface{}) SelectBuilder {
+	b.joins = append(b.joins, expr{join, args})
 
 	return b
 }
 
-func (b *selectBuilder) Join(join string) SelectBuilder {
-	return b.JoinClause("JOIN " + join)
+func (b *selectBuilder) Join(join string, args ...interface{}) SelectBuilder {
+	return b.JoinClause("JOIN "+join, args...)
 }
 
-func (b *selectBuilder) LeftJoin(join string) SelectBuilder {
-	return b.JoinClause("LEFT JOIN " + join)
+func (b *selectBuilder) LeftJoin(join string, args ...interface{}) SelectBuilder {
+	return b.JoinClause("LEFT JOIN "+join, args...)
 }
 
-func (b *selectBuilder) RightJoin(join string) SelectBuilder {
-	return b.JoinClause("RIGHT JOIN " + join)
+func (b *selectBuilder) RightJoin(join string, args ...interface{}) SelectBuilder {
+	return b.JoinClause("RIGHT JOIN "+join, args...)
 }
 
 func (b *selectBuilder) Where(pred interface{}, args ...interface{}) SelectBuilder {
