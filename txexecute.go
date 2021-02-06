@@ -18,7 +18,7 @@ import (
 	"context"
 )
 
-func txExecute(ctx context.Context, tx *Transaction, fn func(Tx) error) (err error) {
+func txExecute(ctx context.Context, tx *pgxTx, fn func(Tx) error) (err error) {
 	defer func() {
 		if err == nil {
 			// Ignore commit errors. The tx has already been committed by RELEASE.
