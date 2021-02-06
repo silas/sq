@@ -56,6 +56,7 @@ func TestPool(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, rows.Next())
 		err = rows.Scan(&output)
+		require.NoError(t, err)
 		require.Equal(t, input, output)
 		require.False(t, rows.Next())
 
