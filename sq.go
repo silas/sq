@@ -30,6 +30,10 @@ type Pool interface {
 	Close()
 }
 
+func NewPool(p *pgxpool.Pool) Pool {
+	return &pgxPool{pool: p}
+}
+
 func Connect(ctx context.Context, connString string) (Pool, error) {
 	config, err := ParseConfig(connString)
 	if err != nil {
@@ -49,7 +53,7 @@ func ConnectConfig(ctx context.Context, config *Config) (Pool, error) {
 		return nil, err
 	}
 
-	return &pgxPool{pool: pool}, nil
+	return NewPool(pool), nil
 }
 
 type pgxPool struct {
