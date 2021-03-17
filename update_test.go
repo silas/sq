@@ -12,6 +12,8 @@ func TestUpdateBuilderToSQL(t *testing.T) {
 		Table("a").
 		Set("b", Expr("? + 1", 1)).
 		SetMap(Eq{"c": 2}).
+		From("f1").
+		From("f2").
 		Where("d = ?", 3).
 		OrderBy("e").
 		Limit(4).
@@ -23,7 +25,9 @@ func TestUpdateBuilderToSQL(t *testing.T) {
 
 	expectedSQL :=
 		"WITH prefix AS ? " +
-			"UPDATE a SET b = ? + 1, c = ? WHERE d = ? " +
+			"UPDATE a SET b = ? + 1, c = ? " +
+			"FROM f1, f2 " +
+			"WHERE d = ? " +
 			"ORDER BY e LIMIT 4 OFFSET 5 " +
 			"RETURNING ?"
 	assert.Equal(t, expectedSQL, sql)
