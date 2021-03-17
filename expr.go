@@ -12,6 +12,7 @@ import (
 type expr struct {
 	sql  string
 	args []interface{}
+	err  error
 }
 
 // Expr builds value expressions for InsertBuilder and UpdateBuilder.
@@ -22,6 +23,10 @@ func Expr(sql string, args ...interface{}) StatementBuilder {
 }
 
 func (e expr) ToSQL() (string, []interface{}, error) {
+	if e.err != nil {
+		return "", nil, e.err
+	}
+
 	if !hasQueryBuilder(e.args) {
 		return e.sql, e.args, nil
 	}
@@ -56,6 +61,9 @@ type exprs []expr
 
 func (es exprs) AppendToSQL(w io.Writer, sep string, args []interface{}) ([]interface{}, error) {
 	for i, e := range es {
+		if e.err != nil {
+			return nil, e.err
+		}
 		if i > 0 {
 			_, err := io.WriteString(w, sep)
 			if err != nil {

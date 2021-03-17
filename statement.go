@@ -46,3 +46,8 @@ func Case(what ...interface{}) CaseBuilder {
 		return b.what(newPart(what[0], what[1:]...))
 	}
 }
+
+// With returns a new WithBuilder.
+func With(name string, field ...string) WithBuilder {
+	return NewWithBuilder().With(name, field...)
+}

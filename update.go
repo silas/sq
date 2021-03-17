@@ -141,7 +141,7 @@ func (b *updateBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 }
 
 func (b *updateBuilder) Prefix(sql string, args ...interface{}) UpdateBuilder {
-	b.prefixes = append(b.prefixes, expr{sql, args})
+	b.prefixes = append(b.prefixes, expr{sql: sql, args: args})
 	return b
 }
 
@@ -193,7 +193,7 @@ func (b *updateBuilder) Offset(offset uint64) UpdateBuilder {
 }
 
 func (b *updateBuilder) Suffix(sql string, args ...interface{}) UpdateBuilder {
-	b.suffixes = append(b.suffixes, expr{sql, args})
+	b.suffixes = append(b.suffixes, expr{sql: sql, args: args})
 
 	return b
 }

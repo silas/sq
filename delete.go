@@ -121,7 +121,7 @@ func (b *deleteBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 }
 
 func (b *deleteBuilder) Prefix(sql string, args ...interface{}) DeleteBuilder {
-	b.prefixes = append(b.prefixes, expr{sql, args})
+	b.prefixes = append(b.prefixes, expr{sql: sql, args: args})
 	return b
 }
 
@@ -154,7 +154,7 @@ func (b *deleteBuilder) Offset(offset uint64) DeleteBuilder {
 }
 
 func (b *deleteBuilder) Suffix(sql string, args ...interface{}) DeleteBuilder {
-	b.suffixes = append(b.suffixes, expr{sql, args})
+	b.suffixes = append(b.suffixes, expr{sql: sql, args: args})
 
 	return b
 }
