@@ -16,12 +16,6 @@ type WithBuilder interface {
 	// As sets the AS part of the common table expression.
 	As(b StatementBuilder) WithBuilder
 
-	// Union sets the UNION recursive subquery for the common table expression.
-	Union(b StatementBuilder) WithBuilder
-
-	// UnionAll sets the UNION ALL recursive subquery for the common table expression.
-	UnionAll(b StatementBuilder) WithBuilder
-
 	// Select returns the SelectBuilder for the parent query.
 	Select(columns ...string) SelectBuilder
 }
@@ -68,20 +62,6 @@ func (w *withBuilder) Recursive() WithBuilder {
 
 func (w *withBuilder) As(b StatementBuilder) WithBuilder {
 	w.current().as = b
-	return w
-}
-
-func (w *withBuilder) Union(b StatementBuilder) WithBuilder {
-	c := w.current()
-	c.union = b
-	c.unionAll = false
-	return w
-}
-
-func (w *withBuilder) UnionAll(b StatementBuilder) WithBuilder {
-	c := w.current()
-	c.union = b
-	c.unionAll = true
 	return w
 }
 

@@ -82,6 +82,12 @@ type SelectBuilder interface {
 	// Suffix adds an expression to the end of the query.
 	Suffix(sql string, args ...interface{}) SelectBuilder
 
+	// Union add UNION to the query.
+	Union() SelectBuilder
+
+	// UnionAll add UNION ALL to the query.
+	UnionAll() SelectBuilder
+
 	ToSQL() (sqlStr string, args []interface{}, err error)
 }
 
@@ -190,7 +196,10 @@ func (b *selectBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 
 	if len(b.suffixes) > 0 {
 		sql.WriteString(" ")
-		args, _ = b.suffixes.AppendToSQL(sql, " ", args)
+		args, err = b.suffixes.AppendToSQL(sql, " ", args)
+		if err != nil {
+			return
+		}
 	}
 
 	sqlStr = sql.String()
@@ -282,4 +291,24 @@ func (b *selectBuilder) Suffix(sql string, args ...interface{}) SelectBuilder {
 	b.suffixes = append(b.suffixes, expr{sql: sql, args: args})
 
 	return b
+}
+
+func (b *selectBuilder) union(all bool) SelectBuilder {
+	ex := expr{}
+	if all {
+		ex.sql = "? UNION ALL"
+	} else {
+		ex.sql = "? UNION"
+	}
+	ex.args = []interface{}{b}
+
+	return &selectBuilder{prefixes: exprs{ex}}
+}
+
+func (b *selectBuilder) Union() SelectBuilder {
+	return b.union(false)
+}
+
+func (b *selectBuilder) UnionAll() SelectBuilder {
+	return b.union(true)
 }

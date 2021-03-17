@@ -72,10 +72,9 @@ func TestWithRecursive(t *testing.T) {
 		Recursive().
 		As(
 			Select("g.id", "g.link", "g.data", "1").
-				From("graph g"),
-		).
-		UnionAll(
-			Select("g.id", "g.link", "g.data", "sg.depth + 1").
+				From("graph g").
+				UnionAll().
+				Columns("g.id", "g.link", "g.data", "sg.depth + 1").
 				From("graph g, search_graph sg").
 				Where("g.id = sg.link"),
 		).
