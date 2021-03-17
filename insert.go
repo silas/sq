@@ -121,7 +121,7 @@ func (b *insertBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 }
 
 func (b *insertBuilder) Prefix(sql string, args ...interface{}) InsertBuilder {
-	b.prefixes = append(b.prefixes, expr{sql, args})
+	b.prefixes = append(b.prefixes, expr{sql: sql, args: args})
 	return b
 }
 
@@ -146,7 +146,7 @@ func (b *insertBuilder) Values(values ...interface{}) InsertBuilder {
 }
 
 func (b *insertBuilder) Suffix(sql string, args ...interface{}) InsertBuilder {
-	b.suffixes = append(b.suffixes, expr{sql, args})
+	b.suffixes = append(b.suffixes, expr{sql: sql, args: args})
 	return b
 }
 

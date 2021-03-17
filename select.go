@@ -118,7 +118,10 @@ func (b *selectBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 	sql := &bytes.Buffer{}
 
 	if len(b.prefixes) > 0 {
-		args, _ = b.prefixes.AppendToSQL(sql, " ", args)
+		args, err = b.prefixes.AppendToSQL(sql, " ", args)
+		if err != nil {
+			return
+		}
 		sql.WriteString(" ")
 	}
 
@@ -196,7 +199,7 @@ func (b *selectBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 }
 
 func (b *selectBuilder) Prefix(sql string, args ...interface{}) SelectBuilder {
-	b.prefixes = append(b.prefixes, expr{sql, args})
+	b.prefixes = append(b.prefixes, expr{sql: sql, args: args})
 	return b
 }
 
@@ -226,7 +229,7 @@ func (b *selectBuilder) From(from string) SelectBuilder {
 }
 
 func (b *selectBuilder) JoinClause(join string, args ...interface{}) SelectBuilder {
-	b.joins = append(b.joins, expr{join, args})
+	b.joins = append(b.joins, expr{sql: join, args: args})
 
 	return b
 }
@@ -276,7 +279,7 @@ func (b *selectBuilder) Offset(offset uint64) SelectBuilder {
 }
 
 func (b *selectBuilder) Suffix(sql string, args ...interface{}) SelectBuilder {
-	b.suffixes = append(b.suffixes, expr{sql, args})
+	b.suffixes = append(b.suffixes, expr{sql: sql, args: args})
 
 	return b
 }
