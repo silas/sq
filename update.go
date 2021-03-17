@@ -27,6 +27,9 @@ type UpdateBuilder interface {
 	// SetMap is a convenience method which calls .Set for each key/value pair in clauses.
 	SetMap(clauses map[string]interface{}) UpdateBuilder
 
+	// From adds FROM clause to the query.
+	From(from string) UpdateBuilder
+
 	// Where adds WHERE expressions to the query.
 	//
 	// See SelectBuilder.Where for more information.
@@ -51,6 +54,7 @@ type updateBuilder struct {
 	prefixes   exprs
 	table      string
 	setClauses []setClause
+	from       []string
 	whereParts []StatementBuilder
 	orderBys   []string
 
@@ -106,6 +110,16 @@ func (b *updateBuilder) ToSQL() (sqlStr string, args []interface{}, err error) {
 		setSQLs[i] = fmt.Sprintf("%s = %s", setClause.column, valSQL)
 	}
 	sql.WriteString(strings.Join(setSQLs, ", "))
+
+	if len(b.from) > 0 {
+		sql.WriteString(" FROM ")
+		for i, from := range b.from {
+			if i > 0 {
+				sql.WriteString(", ")
+			}
+			sql.WriteString(from)
+		}
+	}
 
 	if len(b.whereParts) > 0 {
 		sql.WriteString(" WHERE ")
@@ -167,6 +181,11 @@ func (b *updateBuilder) SetMap(clauses map[string]interface{}) UpdateBuilder {
 		val := clauses[key]
 		b.Set(key, val)
 	}
+	return b
+}
+
+func (b *updateBuilder) From(from string) UpdateBuilder {
+	b.from = append(b.from, from)
 	return b
 }
 
