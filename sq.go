@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -21,6 +22,8 @@ type Executor interface {
 	Exec(ctx context.Context, qb StatementBuilder) (Result, error)
 	Query(ctx context.Context, qb StatementBuilder) (Rows, error)
 	QueryRow(ctx context.Context, qb StatementBuilder) Row
+	All(ctx context.Context, qb StatementBuilder, dst interface{}) error
+	One(ctx context.Context, qb StatementBuilder, dst interface{}) error
 }
 
 type Pool interface {
@@ -87,6 +90,14 @@ func (p *pgxPool) QueryRow(ctx context.Context, qb StatementBuilder) Row {
 	return queryRow(ctx, p.pool, qb)
 }
 
+func (p *pgxPool) All(ctx context.Context, qb StatementBuilder, dst interface{}) error {
+	return all(ctx, p.pool, qb, dst)
+}
+
+func (p *pgxPool) One(ctx context.Context, qb StatementBuilder, dst interface{}) error {
+	return one(ctx, p.pool, qb, dst)
+}
+
 type Result = pgconn.CommandTag
 
 type Tx interface {
@@ -109,6 +120,14 @@ func (tx *pgxTx) QueryRow(ctx context.Context, qb StatementBuilder) Row {
 	return queryRow(ctx, tx.tx, qb)
 }
 
+func (tx *pgxTx) All(ctx context.Context, qb StatementBuilder, dst interface{}) error {
+	return all(ctx, tx.tx, qb, dst)
+}
+
+func (tx *pgxTx) One(ctx context.Context, qb StatementBuilder, dst interface{}) error {
+	return one(ctx, tx.tx, qb, dst)
+}
+
 func exec(ctx context.Context, e pgxExecutor, qb StatementBuilder) (Result, error) {
 	sql, args, err := qb.ToSQL()
 	if err != nil {
@@ -123,7 +142,7 @@ func exec(ctx context.Context, e pgxExecutor, qb StatementBuilder) (Result, erro
 	return e.Exec(ctx, sql, args...)
 }
 
-func query(ctx context.Context, e pgxExecutor, qb StatementBuilder) (Rows, error) {
+func query(ctx context.Context, e pgxExecutor, qb StatementBuilder) (pgx.Rows, error) {
 	sql, args, err := qb.ToSQL()
 	if err != nil {
 		return nil, err
@@ -137,7 +156,7 @@ func query(ctx context.Context, e pgxExecutor, qb StatementBuilder) (Rows, error
 	return e.Query(ctx, sql, args...)
 }
 
-func queryRow(ctx context.Context, e pgxExecutor, qb StatementBuilder) Row {
+func queryRow(ctx context.Context, e pgxExecutor, qb StatementBuilder) pgx.Row {
 	sql, args, err := qb.ToSQL()
 	if err != nil {
 		return rowError{err}
@@ -149,6 +168,24 @@ func queryRow(ctx context.Context, e pgxExecutor, qb StatementBuilder) Row {
 	}
 
 	return e.QueryRow(ctx, sql, args...)
+}
+
+func all(ctx context.Context, e pgxExecutor, qb StatementBuilder, dst interface{}) error {
+	rows, err := query(ctx, e, qb)
+	if err != nil {
+		return err
+	}
+
+	return pgxscan.ScanAll(dst, rows)
+}
+
+func one(ctx context.Context, e pgxExecutor, qb StatementBuilder, dst interface{}) error {
+	rows, err := query(ctx, e, qb)
+	if err != nil {
+		return err
+	}
+
+	return pgxscan.ScanOne(dst, rows)
 }
 
 type pgxExecutor interface {
